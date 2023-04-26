@@ -6,8 +6,11 @@ Created on Sat May 22 23:28:54 2021
 版權屬於「楊超霆」所有，若有疑問，可聯絡ivanyang0606@gmail.com
 第六章 Youtube中尋找KOL夥伴
 Youtube爬蟲－影片資料
+
+更新紀錄：
+2022/9/17 selenium將套件更新到4.4.3版本，因此寫法全部都更新過
+2023/04/26更新，因youtube的網頁程式碼有所變動，導致於影片的內容爬不到
 """
-# selenium，2022/9/17 將套件更新到4.4.3版本，因此寫法全部都更新過
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service as ChromeService
@@ -71,44 +74,41 @@ for yName, yChannel, allLink in zip(getdata['Youtuber頻道名稱'], getdata['�
     for link in tqdm(eval(allLink)):
         # 去到該影片
         driver.get(link)
-        
+        time.sleep(5) # 網路慢的話這個最好長一點
         while len(driver.find_elements(by=By.XPATH, value='//h1[@class="title style-scope ytd-video-primary-info-renderer"]')) == 0:
             time.sleep(5)
         
         youtuberChannel.append(yName) # 取得Youtuber頻道名稱
         channelLink.append(yChannel) # 取得頻道網址
         videoLink.append(allLink) # 取得影片連結
-        # 取得影片名稱
-        getvideoName = driver.find_element(by=By.XPATH, value='//h1[@class="title style-scope ytd-video-primary-info-renderer"]').text
+        # 2023/04/26更新，取得影片名稱
+        getvideoName = driver.find_element(by=By.XPATH, value='//yt-formatted-string[@class="style-scope ytd-watch-metadata"]').text
         print('開始爬取： '+ getvideoName)
         videoName.append(getvideoName)
-        # 取得讚數
-        getgood = driver.find_element(by=By.XPATH, value='//div[@id="menu-container"]/div/ytd-menu-renderer/div[1]/ytd-toggle-button-renderer[1]/a/yt-formatted-string').get_attribute('aria-label')
+        # 2023/04/26更新，取得讚數
+        getgood = driver.find_element(by=By.ID, value='segmented-like-button').text
         if '尚未有人表示喜歡' in getgood:
             good.append(0) 
         else:
             getgood = getgood.replace(' 人喜歡','')
             getgood = getgood.replace(',','')
             good.append(getgood) 
-        # 觀看數、影片時間
-        getlook = driver.find_element(by=By.XPATH, value='info-text').text
-        # getlook = getlook.split('日 ')[0]
+            
+        # 2023/04/26更新，先點擊打開資訊欄
+        driver.find_element(by=By.ID, value='snippet').click()
+        time.sleep(random.randint(2,5))
+        # 2023/04/26更新，觀看數、影片時間
+        getlook = driver.find_element(by=By.XPATH, value='//yt-formatted-string[@id="info"]').text
+        getlook = getlook.split('  ')
 
-        getlook = getlook.replace('觀看次數：','')
-        getlook = getlook.replace(' ','')
-        getlook = getlook.replace('.','')
-        getlook = getlook.replace(',','')
-        getlook = getlook.split('次')
         videoDate.append(datetime.strptime(getlook[1], "%Y年%m月%d日")) # 取得影片時間
         
-        looking.append(int(getlook[0])) # 取得觀看數
+        looking.append(int(getlook[0].replace('觀看次數：','').replace('次','').replace(',',''))) # 取得觀看數
         time.sleep(random.randint(2,5))
         
-        # 點擊更多內容
-        driver.find_element(by=By.XPATH, value='//yt-formatted-string[@class="more-button style-scope ytd-video-secondary-info-renderer"]').click()
-        time.sleep(random.randint(2,5))
-        getContent = driver.find_element(by=By.XPATH, value='//div[@id="content"]/div[@id="description"]').text
-        videoContent.append(getContent) # 取得影片介紹
+        # 取得影片介紹
+        getContent = driver.find_element(by=By.ID, value='description-inline-expander').text
+        videoContent.append(getContent)
         
         # 先滾動一小段在取得留言數
         while len(driver.find_elements(by=By.XPATH, value='//h2[@id="count"]/yt-formatted-string/span'))==0:
@@ -166,7 +166,6 @@ for yName, yChannel, allLink in zip(getdata['Youtuber頻道名稱'], getdata['�
             '讚數' : good,
             '觀看次數' : looking,
             '影片文案內容' : videoContent,
-            
             '留言數量' : commentNum,
             '留言' : comment
            }
@@ -185,7 +184,6 @@ dic = {
         '讚數' : good,
         '觀看次數' : looking,
         '影片文案內容' : videoContent,
-        
         '留言數量' : commentNum,
         '留言' : comment
        }
