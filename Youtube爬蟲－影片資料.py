@@ -9,7 +9,8 @@ Youtube爬蟲－影片資料
 
 更新紀錄：
 2022/9/17 selenium將套件更新到4.4.3版本，因此寫法全部都更新過
-2023/04/26更新，因youtube的網頁程式碼有所變動，導致於影片的內容爬不到
+2023/04/26，因youtube的網頁程式碼有所變動，導致於影片的內容爬不到
+2023/05/10，由於youtube網頁有更動，因此編輯
 """
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -122,7 +123,8 @@ for yName, yChannel, allLink in zip(getdata['Youtuber頻道名稱'], getdata['�
         #--- 開始進行「取得留言」工程
         # 滾動頁面
         getcomment = scroll(driver, '//div[@id="main"]')
-        getfans = driver.find_elements(by=By.XPATH, value='author-text') # 發言者
+        # 2023/05/10，抓不到發言者，發現標籤改為ID
+        getfans = driver.find_elements(by=By.ID, value='author-text') # 發言者
         
         # 儲存留言內容
         commentMan = []
@@ -134,24 +136,24 @@ for yName, yChannel, allLink in zip(getdata['Youtuber頻道名稱'], getdata['�
         count = 0 # 用來編號留言
         containar = {}
         for fans, com in zip(getfans, getcomment):
-            if count != 0: # 第一次不需要執行，因為是youter自己的資料
-                getcom = com.text
-                getcom = getcom.replace('\n回覆','')
-                getcom = getcom.replace('\nREPLY','')
-                cutcom = getcom.split('\n')
-                
-                if len(cutcom) == 3: # 若沒有人按讚，則補0
-                    cutcom.append(0)
-                try:
-                    containar['留言'+str(count)] = {
-                        '發言者':cutcom[0],
-                        '發言者頻道': fans.get_attribute('href'),
-                        '發言時間':cutcom[1],
-                        '發言內容':cutcom[2],
-                        '讚數':cutcom[3]
-                        }
-                except:# 碰到異常資料之極端處理
-                    containar['留言'+str(count)] = {'資料異常'}
+            # 2023/05/10，由於youtube網頁有更動，因此編輯刪除一行
+            getcom = com.text
+            getcom = getcom.replace('\n回覆','')
+            getcom = getcom.replace('\nREPLY','')
+            cutcom = getcom.split('\n')
+            
+            if len(cutcom) == 3: # 若沒有人按讚，則補0
+                cutcom.append(0)
+            try:
+                containar['留言'+str(count)] = {
+                    '發言者':cutcom[0],
+                    '發言者頻道': fans.get_attribute('href'),
+                    '發言時間':cutcom[1],
+                    '發言內容':cutcom[2],
+                    '讚數':cutcom[3]
+                    }
+            except:# 碰到異常資料之極端處理
+                containar['留言'+str(count)] = {'資料異常'}
             count = count + 1
         
         comment.append(containar) # 取得留言
