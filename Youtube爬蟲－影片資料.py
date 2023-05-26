@@ -12,6 +12,7 @@ Youtube爬蟲－影片資料
 2023/04/26，因youtube的網頁程式碼有所變動，導致於影片的內容爬不到
 2023/05/10，由於youtube網頁有更動，因此編輯
 2023/05/25，有些影片的時間前面會多了「首播日期：」這幾個字，會造成字串無法轉換成時間格式，因此將其排除
+2023/05/26，影片日期中會有"X年前"的顯示方式，因此修改
 """
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -104,7 +105,11 @@ for yName, yChannel, allLink in zip(getdata['Youtuber頻道名稱'], getdata['�
         getlook = getlook.split('  ')
 
         # 2023/05/25更新，有些影片的時間前面會多了「首播日期：」這幾個字，會造成字串無法轉換成時間格式，因此將其排除
-        videoDate.append(datetime.strptime(getlook[1].replace('首播日期：',''), "%Y年%m月%d日")) # 取得影片時間
+        # 2023/05/26更新，影片日期中會有"X年前"的顯示方式，因此修改
+        if '年前' in getlook[1]:
+            videoDate.append(datetime.datetime.now() - datetime.timedelta(days=int(getlook[1].replace('年前',''))))
+        else:
+            videoDate.append(datetime.strptime(getlook[1].replace('首播日期：',''), "%Y年%m月%d日")) # 取得影片時間
         
         looking.append(int(getlook[0].replace('觀看次數：','').replace('次','').replace(',',''))) # 取得觀看數
         time.sleep(random.randint(2,5))
